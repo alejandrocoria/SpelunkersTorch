@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "spelunkerstorch:block/torch"
+    }
+  }
+}
