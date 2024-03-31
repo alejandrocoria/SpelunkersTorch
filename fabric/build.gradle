@@ -6,8 +6,10 @@ plugins {
 }
 
 base {
-    archivesName = "${mod_name}-fabric-${minecraft_version}"
+    archivesName = "${mod_name}-${minecraft_version}"
 }
+
+remapJar.archiveClassifier = "fabric"
 
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"

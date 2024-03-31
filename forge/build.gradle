@@ -6,8 +6,10 @@ plugins {
 }
 
 base {
-    archivesName = "${mod_name}-forge-${minecraft_version}"
+    archivesName = "${mod_name}-${minecraft_version}"
 }
+
+jar.archiveClassifier = "forge"
 
 minecraft {
     mappings channel: 'official', version: minecraft_version
