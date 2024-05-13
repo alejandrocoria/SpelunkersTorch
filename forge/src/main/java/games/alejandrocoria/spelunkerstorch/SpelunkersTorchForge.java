@@ -1,11 +1,13 @@
 package games.alejandrocoria.spelunkerstorch;
 
 import games.alejandrocoria.spelunkerstorch.client.SpelunkersTorchClientForge;
+import games.alejandrocoria.spelunkerstorch.common.command.CommandRecalculate;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -32,6 +34,7 @@ public class SpelunkersTorchForge {
         Registry.init();
 
         eventBus.addListener(SpelunkersTorchForge::onCreativeTabsBuild);
+        eventBus.addListener(SpelunkersTorchForge::registerCommands);
         eventBus.addListener(SpelunkersTorchClientForge::clientSetup);
 
         Constants.LOG.info("Spelunker's Torch common init done");
@@ -41,5 +44,9 @@ public class SpelunkersTorchForge {
         if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
             event.accept(TORCH_ITEM.get());
         }
+    }
+
+    public static void registerCommands(RegisterCommandsEvent event) {
+        CommandRecalculate.register(event.getDispatcher());
     }
 }

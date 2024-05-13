@@ -1,3 +1,7 @@
 {
-  "block.spelunkerstorch.torch": "Spelunker's Torch"
+  "block.spelunkerstorch.torch": "Spelunker's Torch",
+  "chat.spelunkerstorch.recalculated_loaded": "Recalculated all loaded (%1$d)",
+  "chat.spelunkerstorch.recalculated_chunk": "Recalculated chunk %1$s (%2$d)",
+  "chat.spelunkerstorch.recalculated_section": "Recalculated section [%1$s] (%2$d)",
+  "chat.spelunkerstorch.recalculated_single": "Recalculated torch at [%1$s]"
 }

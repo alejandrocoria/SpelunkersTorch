@@ -238,4 +238,12 @@ public class TorchEntity extends BlockEntity {
 
         return null;
     }
+
+    public static int distanceComparator(BlockPos position, TorchEntity t1, TorchEntity t2) {
+        int distance = (int) (position.distSqr(t1.getBlockPos()) - position.distSqr(t2.getBlockPos()));
+        if (distance == 0) {
+            return Long.compare(t1.getDate(), t2.getDate());
+        }
+        return distance;
+    }
 }

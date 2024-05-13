@@ -39,5 +39,6 @@ public class Registry {
             () -> BlockEntityType.Builder.of(TorchEntity::new, TORCH_BLOCK.get(), WALL_TORCH_BLOCK.get()).build(null));
 
     public static void init() {
+
     }
 }

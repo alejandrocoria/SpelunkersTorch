@@ -43,7 +43,7 @@ public class SpelunkersTorchClient {
 
         List<TorchEntity> nearbyTorches = SpelunkersTorch.getNearbyTorchEntities(level, playerPosition);
         closestTorch = nearbyTorches.stream()
-                .min((t1, t2) -> distanceComparator(playerPosition, t1, t2))
+                .min((t1, t2) -> TorchEntity.distanceComparator(playerPosition, t1, t2))
                 .orElse(null);
 
         lastPlayerPosition = playerPosition;
@@ -56,13 +56,5 @@ public class SpelunkersTorchClient {
             return;
         }
         lastPlayerPosition = INVALID_PLAYER_POSITION;
-    }
-
-    private static int distanceComparator(BlockPos position, TorchEntity t1, TorchEntity t2) {
-        int distance = (int) (position.distSqr(t1.getBlockPos()) - position.distSqr(t2.getBlockPos()));
-        if (distance == 0) {
-            return Long.compare(t1.getDate(), t2.getDate());
-        }
-        return distance;
     }
 }

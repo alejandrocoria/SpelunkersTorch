@@ -2,6 +2,7 @@ package games.alejandrocoria.spelunkerstorch;
 
 
 import games.alejandrocoria.spelunkerstorch.client.SpelunkersTorchClientNeoForge;
+import games.alejandrocoria.spelunkerstorch.common.command.CommandRecalculate;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -9,6 +10,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_ITEM;
@@ -29,6 +31,7 @@ public class SpelunkersTorchNeoForge {
         Registry.init();
 
         eventBus.addListener(SpelunkersTorchNeoForge::onCreativeTabsBuild);
+        eventBus.addListener(SpelunkersTorchNeoForge::registerCommands);
         eventBus.addListener((FMLClientSetupEvent event) -> SpelunkersTorchClientNeoForge.clientSetup(event, eventBus));
 
         Constants.LOG.info("Spelunker's Torch common init done");
@@ -38,5 +41,9 @@ public class SpelunkersTorchNeoForge {
         if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
             event.accept(TORCH_ITEM.get());
         }
+    }
+
+    public static void registerCommands(RegisterCommandsEvent event) {
+        CommandRecalculate.register(event.getDispatcher());
     }
 }
