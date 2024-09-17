@@ -5,7 +5,6 @@ import games.alejandrocoria.spelunkerstorch.Constants;
 import games.alejandrocoria.spelunkerstorch.client.SpelunkersTorchClient;
 import games.alejandrocoria.spelunkerstorch.common.block.entity.TorchEntity;
 import games.alejandrocoria.spelunkerstorch.common.util.Util;
-import games.alejandrocoria.spelunkerstorch.platform.Services;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.EntityModelSet;
@@ -17,6 +16,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.Item;
@@ -26,7 +26,9 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.AxisAngle4f;
 import org.joml.Quaternionf;
 
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.List;
 
 import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_BLOCK;
 import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_ITEM;
@@ -34,7 +36,7 @@ import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_ITEM;
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
 public class TorchBlockEntityWithoutLevelRenderer extends BlockEntityWithoutLevelRenderer {
-    private static final ResourceLocation TORCH_MODEL = new ModelResourceLocation(Constants.MOD_ID, "torch", "has_target=false");
+    private static final ModelResourceLocation TORCH_MODEL = new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "torch"), "has_target=false");
 
     public TorchBlockEntityWithoutLevelRenderer(BlockEntityRenderDispatcher renderDispatcher, EntityModelSet entityModelSet) {
         super(renderDispatcher, entityModelSet);
@@ -72,7 +74,7 @@ public class TorchBlockEntityWithoutLevelRenderer extends BlockEntityWithoutLeve
             poseStack.rotateAround(rotation, 0, 0.75f, 0);
         }
 
-        BakedModel blockModel = Services.PLATFORM.getModel(Minecraft.getInstance().getModelManager(), TORCH_MODEL);
+        BakedModel blockModel = Minecraft.getInstance().getModelManager().getModel(TORCH_MODEL);
         Minecraft.getInstance().getBlockRenderer().getModelRenderer().renderModel(
                 poseStack.last(),
                 multiBufferSource.getBuffer(Sheets.cutoutBlockSheet()),
@@ -85,10 +87,12 @@ public class TorchBlockEntityWithoutLevelRenderer extends BlockEntityWithoutLeve
 
         if (inHand) {
             Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-            TorchEntity closestTorch = SpelunkersTorchClient.getClosestTorch(Minecraft.getInstance().level, BlockPos.containing(cameraPos));
-            if (closestTorch != null) {
-                Quaternionf needleRotation = calculateNeedleRotation(player, cameraPos, closestTorch);
-                TorchRenderer.renderNeedle(poseStack, needleRotation, multiBufferSource, light, overlay);
+            List<TorchEntity> nearbyTorches = SpelunkersTorchClient.getTorchesInNearbySections(Minecraft.getInstance().level, SectionPos.of(BlockPos.containing(cameraPos)));
+            if (!nearbyTorches.isEmpty()) {
+                Quaternionf needleRotation = calculateNeedleRotation(player, cameraPos, nearbyTorches);
+                if (needleRotation != null) {
+                    TorchRenderer.renderNeedle(poseStack, needleRotation, multiBufferSource, light, overlay);
+                }
             }
         } else {
             poseStack.pushPose();
@@ -104,48 +108,78 @@ public class TorchBlockEntityWithoutLevelRenderer extends BlockEntityWithoutLeve
         poseStack.popPose();
     }
 
-    private static Quaternionf calculateNeedleRotation(LocalPlayer player, Vec3 cameraPos, TorchEntity closestTorch) {
-        Vec3 needleTarget = closestTorch.getBlockPos().getCenter();
-
-        BlockPos torchTargetPos = closestTorch.getTarget();
-        if (torchTargetPos != null) {
-            BlockPos torchPos = closestTorch.getBlockPos();
-            Vec3 torchToPlayer = cameraPos.subtract(torchPos.getCenter());
-            Vec3 targetToPlayer = cameraPos.subtract(torchTargetPos.getCenter());
-            double distTorchToTarget = Math.sqrt(torchPos.distSqr(torchTargetPos));
-            double distTorchToPlayer = torchToPlayer.length();
-            double distTargetToPlayer = targetToPlayer.length();
-
-            double distanceFactor1 = distTorchToPlayer / Mth.clamp(10 - distTorchToTarget, 3, 10);
-            distanceFactor1 = 1 - Mth.clamp(distanceFactor1, 0, 1);
-
-            double distanceFactor2 = (distTorchToTarget / (distTorchToPlayer + distTargetToPlayer) - 0.5) * 2;
-            distanceFactor2 = Mth.clamp(distanceFactor2, 0, 1);
-
-            double mainFactor = distanceFactor1 + distanceFactor2;
-
-            if (!closestTorch.getIncoming().isEmpty()) {
-                double dotFactor = closestTorch.getIncoming().stream()
-                        .map(p -> p.subtract(torchPos))
-                        .map(Vec3::atLowerCornerOf)
-                        .map(p -> p.dot(torchToPlayer) / p.lengthSqr())
-                        .max(Double::compare)
-                        .map(d -> Mth.clamp(d * 2, 0, 1))
-                        .orElse(0d);
-
-                mainFactor -= dotFactor;
+    @Nullable
+    private static Quaternionf calculateNeedleRotation(LocalPlayer player, Vec3 cameraPos, List<TorchEntity> nearbyTorches) {
+        double LIMIT = 256.0;
+        Vec3 nodeSum = Vec3.ZERO;
+        Vec3 pathSum = Vec3.ZERO;
+        double distanceToClosestPath = LIMIT;
+        for (TorchEntity torchEntity : nearbyTorches) {
+            if (!torchEntity.hasTarget() || torchEntity.getPath().isEmpty()) {
+                continue;
             }
 
-            needleTarget = torchPos.getCenter().lerp(torchTargetPos.getCenter(), Mth.clamp(mainFactor, 0, 1));
+            double distanceToClosest = LIMIT;
+            Vec3 closest = null;
+
+            List<BlockPos> path = torchEntity.getPath();
+            BlockPos prev = path.getFirst();
+            for (int i = 1; i < path.size(); ++i) {
+                BlockPos node = path.get(i);
+                Vec3 closestPoint = getClosestPoint(cameraPos, prev.getCenter(), node.getCenter());
+                double distanceToPoint = closestPoint.distanceToSqr(cameraPos);
+                if (distanceToPoint < distanceToClosest) {
+                    distanceToClosest = distanceToPoint;
+                    closest = closestPoint;
+                }
+                Vec3 toNextNode = Vec3.atLowerCornerOf(node.subtract(prev));
+                double factor = toNextNode.length() * Math.max(1.0 / Math.clamp(distanceToPoint, 1.0, LIMIT) - 1.0 / LIMIT, 0.0);
+                toNextNode = toNextNode.scale(factor);
+                nodeSum = nodeSum.add(toNextNode);
+                prev = node;
+            }
+
+            if (closest != null) {
+                closest = closest.subtract(cameraPos);
+                double factor = 1.0 / closest.lengthSqr();
+                closest.scale(factor);
+                pathSum = pathSum.add(closest);
+                if (distanceToClosest < distanceToClosestPath) {
+                    distanceToClosestPath = distanceToClosest;
+                }
+            }
         }
+
+        if (nodeSum.equals(Vec3.ZERO) && pathSum.equals(Vec3.ZERO)) {
+            return null;
+        }
+
+        nodeSum = nodeSum.normalize();
+        pathSum = pathSum.normalize();
+        double pathFactor = 1 / (1 + Math.pow(2, -Math.sqrt(distanceToClosestPath)/*-distanceToClosestPath*/ + 4));
+        Vec3 averageSum = nodeSum.scale(1.0 - pathFactor).add(pathSum.scale(pathFactor));
 
         float rotX = player.getViewXRot(1) * Mth.DEG_TO_RAD;
         float rotY = player.getViewYRot(1) * Mth.DEG_TO_RAD;
+        averageSum = averageSum.yRot(rotY + Mth.PI);
+        averageSum = averageSum.xRot(-rotX);
 
-        Vec3 toTorch = needleTarget.subtract(cameraPos);
-        toTorch = toTorch.yRot(rotY + Mth.PI);
-        toTorch = toTorch.xRot(-rotX);
+        return Util.getRotation(averageSum);
+    }
 
-        return Util.getRotation(toTorch);
+    private static Vec3 getClosestPoint(Vec3 p, Vec3 a, Vec3 b) {
+        Vec3 ab = b.subtract(a);
+        Vec3 ap = p.subtract(a);
+        double dotApAb = ap.dot(ab);
+        if (dotApAb <= 0.0) {
+            return a;
+        }
+
+        Vec3 bp = p.subtract(b);
+        if (bp.dot(ab) >= 0.0) {
+            return b;
+        }
+
+        return a.add(ab.scale(dotApAb / ab.lengthSqr()));
     }
 }

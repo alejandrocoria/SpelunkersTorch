@@ -10,11 +10,13 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.List;
 import java.util.Optional;
 
 @MethodsReturnNonnullByDefault
@@ -45,6 +47,7 @@ public class TorchRenderer implements BlockEntityRenderer<TorchEntity> {
         });
 
         renderNeedle(poseStack, rotation, multiBufferSource, light, overlay);
+        renderDebugPath(poseStack, torchEntity.getBlockPos(), torchEntity.getPath(), multiBufferSource, light, overlay);
 
         poseStack.popPose();
     }
@@ -59,15 +62,44 @@ public class TorchRenderer implements BlockEntityRenderer<TorchEntity> {
         VertexConsumer buffer = multiBufferSource.getBuffer(NeedleRenderType.getRenderType());
         PoseStack.Pose entry = poseStack.last();
         Matrix4f matrixPos = entry.pose();
-        buffer.vertex(matrixPos, -NEEDLE_HALF_WIDTH, 0, 0).color(1.f, 1.f, 1.f, 1.f).uv2(light).endVertex();
-        buffer.vertex(matrixPos, NEEDLE_HALF_WIDTH, 0, 0).color(1.f, 1.f, 1.f, 1.f).uv2(light).endVertex();
-        buffer.vertex(matrixPos, 0, -NEEDLE_HALF_WIDTH, 0).color(1.f, 1.f, 1.f, 1.f).uv2(light).endVertex();
-        buffer.vertex(matrixPos, 0, 0, NEEDLE_LENGTH).color(0.7f, 0.7f, 0.7f, 1.f).uv2(light).endVertex();
-        buffer.vertex(matrixPos, -NEEDLE_HALF_WIDTH, 0, 0).color(0.8f, 0.8f, 0.8f, 1.f).uv2(light).endVertex();
-        buffer.vertex(matrixPos, 0, NEEDLE_HALF_WIDTH, 0).color(0.9f, 0.9f, 0.9f, 1.f).uv2(light).endVertex();
-        buffer.vertex(matrixPos, NEEDLE_HALF_WIDTH, 0, 0).color(1.f, 1.f, 1.f, 1.f).uv2(light).endVertex();
-        buffer.vertex(matrixPos, 0, 0, NEEDLE_LENGTH).color(0.85f, 0.85f, 0.85f, 1.f).uv2(light).endVertex();
+        buffer.addVertex(matrixPos, -NEEDLE_HALF_WIDTH, 0, 0).setColor(1.f, 1.f, 1.f, 1.f).setLight(light).setOverlay(overlay);
+        buffer.addVertex(matrixPos, NEEDLE_HALF_WIDTH, 0, 0).setColor(1.f, 1.f, 1.f, 1.f).setLight(light).setOverlay(overlay);
+        buffer.addVertex(matrixPos, 0, -NEEDLE_HALF_WIDTH, 0).setColor(1.f, 1.f, 1.f, 1.f).setLight(light).setOverlay(overlay);
+        buffer.addVertex(matrixPos, 0, 0, NEEDLE_LENGTH).setColor(0.7f, 0.7f, 0.7f, 1.f).setLight(light).setOverlay(overlay);
+        buffer.addVertex(matrixPos, -NEEDLE_HALF_WIDTH, 0, 0).setColor(0.8f, 0.8f, 0.8f, 1.f).setLight(light).setOverlay(overlay);
+        buffer.addVertex(matrixPos, 0, NEEDLE_HALF_WIDTH, 0).setColor(0.9f, 0.9f, 0.9f, 1.f).setLight(light).setOverlay(overlay);
+        buffer.addVertex(matrixPos, NEEDLE_HALF_WIDTH, 0, 0).setColor(1.f, 1.f, 1.f, 1.f).setLight(light).setOverlay(overlay);
+        buffer.addVertex(matrixPos, 0, 0, NEEDLE_LENGTH).setColor(0.85f, 0.85f, 0.85f, 1.f).setLight(light).setOverlay(overlay);
 
         poseStack.popPose();
+    }
+
+    public static void renderDebugPath(PoseStack poseStack, BlockPos torchPos, List<BlockPos> path, MultiBufferSource multiBufferSource, int light, int overlay) {
+        if (path.isEmpty()) {
+            return;
+        }
+
+        VertexConsumer buffer = multiBufferSource.getBuffer(NeedleRenderType.getRenderType());
+        float halfX = 0.1f;
+        float halfY = 0.07f;
+        float halfZ = 0.07f;
+
+        for (BlockPos node : path) {
+            poseStack.pushPose();
+
+            poseStack.translate(0.5, 0.5, 0.5);
+            poseStack.translate(node.getX() - torchPos.getX(), node.getY() - torchPos.getY(), node.getZ() - torchPos.getZ());
+
+            PoseStack.Pose entry = poseStack.last();
+            Matrix4f matrixPos = entry.pose();
+            buffer.addVertex(matrixPos, -halfX, -halfY, halfZ).setColor(0.7f, 0.7f, 0.7f, 1.f).setLight(light).setOverlay(overlay);
+            buffer.addVertex(matrixPos, 0, -halfY, -halfZ).setColor(0.7f, 0.7f, 0.7f, 1.f).setLight(light).setOverlay(overlay);
+            buffer.addVertex(matrixPos, halfX, -halfY, halfZ).setColor(0.7f, 0.7f, 0.7f, 1.f).setLight(light).setOverlay(overlay);
+            buffer.addVertex(matrixPos, 0, halfY, 0).setColor(0.85f, 0.85f, 0.85f, 1.f).setLight(light).setOverlay(overlay);
+            buffer.addVertex(matrixPos, -halfX, -halfY, halfZ).setColor(0.9f, 0.9f, 0.9f, 1.f).setLight(light).setOverlay(overlay);
+            buffer.addVertex(matrixPos, 0, -halfY, -halfZ).setColor(1.f, 1.f, 1.f, 1.f).setLight(light).setOverlay(overlay);
+
+            poseStack.popPose();
+        }
     }
 }

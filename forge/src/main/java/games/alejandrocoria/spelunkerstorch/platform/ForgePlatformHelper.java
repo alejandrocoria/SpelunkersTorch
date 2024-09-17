@@ -7,6 +7,7 @@ import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelManager;
+import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -60,11 +61,6 @@ public class ForgePlatformHelper implements IPlatformHelper {
                 });
             }
         };
-    }
-
-    @Override
-    public BakedModel getModel(ModelManager dispatcher, ResourceLocation id) {
-        return dispatcher.getModel(id);
     }
 
     @Override

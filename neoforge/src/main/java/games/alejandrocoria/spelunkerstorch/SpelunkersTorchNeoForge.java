@@ -9,8 +9,10 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_ITEM;
@@ -30,9 +32,10 @@ public class SpelunkersTorchNeoForge {
         SpelunkersTorch.init();
         Registry.init();
 
+        NeoForge.EVENT_BUS.addListener(SpelunkersTorchNeoForge::registerCommands);
         eventBus.addListener(SpelunkersTorchNeoForge::onCreativeTabsBuild);
-        eventBus.addListener(SpelunkersTorchNeoForge::registerCommands);
         eventBus.addListener((FMLClientSetupEvent event) -> SpelunkersTorchClientNeoForge.clientSetup(event, eventBus));
+        NeoForge.EVENT_BUS.addListener(SpelunkersTorchNeoForge::serverTick);
 
         Constants.LOG.info("Spelunker's Torch common init done");
     }
@@ -45,5 +48,9 @@ public class SpelunkersTorchNeoForge {
 
     public static void registerCommands(RegisterCommandsEvent event) {
         CommandRecalculate.register(event.getDispatcher());
+    }
+
+    public static void serverTick(ServerTickEvent.Post event) {
+        SpelunkersTorch.serverTick();
     }
 }

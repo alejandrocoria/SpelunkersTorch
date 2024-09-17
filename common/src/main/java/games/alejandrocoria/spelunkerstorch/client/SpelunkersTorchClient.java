@@ -8,10 +8,10 @@ import net.minecraft.FieldsAreNonnullByDefault;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
-import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 
-import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.ArrayList;
 import java.util.List;
 
 import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_ENTITY;
@@ -20,39 +20,33 @@ import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_ENTITY;
 @ParametersAreNonnullByDefault
 @FieldsAreNonnullByDefault
 public class SpelunkersTorchClient {
-    private static final BlockPos INVALID_PLAYER_POSITION = new BlockPos(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
+    private static final SectionPos INVALID_PLAYER_POSITION = SectionPos.of(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
 
-    private static BlockPos lastPlayerPosition = INVALID_PLAYER_POSITION;
-    @Nullable
-    private static TorchEntity closestTorch = null;
+    private static SectionPos lastPlayerPosition = INVALID_PLAYER_POSITION;
+    private static List<TorchEntity> closestTorches = new ArrayList<>();
 
     public static void init() {
         BlockEntityRenderers.register(TORCH_ENTITY.get(), TorchRenderer::new);
     }
 
-    @Nullable
-    public static TorchEntity getClosestTorch(ClientLevel level, BlockPos playerPosition) {
+    public static List<TorchEntity> getTorchesInNearbySections(ClientLevel level, SectionPos playerPosition) {
         if (!level.isClientSide()) {
-            Constants.LOG.error("SpelunkersTorchClient.getClosestTorch should be called only in the client.");
-            return null;
+            Constants.LOG.error("SpelunkersTorchClient.getTorchesInNearbySections should be called only in the client.");
+            return new ArrayList<>();
         }
 
         if (lastPlayerPosition.equals(playerPosition)) {
-            return closestTorch;
+            return closestTorches;
         }
 
-        List<TorchEntity> nearbyTorches = SpelunkersTorch.getNearbyTorchEntities(level, playerPosition);
-        closestTorch = nearbyTorches.stream()
-                .min((t1, t2) -> TorchEntity.distanceComparator(playerPosition, t1, t2))
-                .orElse(null);
-
+        closestTorches = SpelunkersTorch.getTorchesInNearbySections(level, playerPosition);
         lastPlayerPosition = playerPosition;
-        return closestTorch;
+        return closestTorches;
     }
 
-    public static void torchEntityAddOrRemoved(TorchEntity torchEntity) {
+    public static void torchEntityAddedOrRemoved(TorchEntity torchEntity) {
         if (torchEntity.getLevel() != null && !torchEntity.getLevel().isClientSide()) {
-            Constants.LOG.error("SpelunkersTorchClient.torchEntityAddOrRemoved should be called only in the client.");
+            Constants.LOG.error("SpelunkersTorchClient.torchEntityAddedOrRemoved should be called only in the client.");
             return;
         }
         lastPlayerPosition = INVALID_PLAYER_POSITION;

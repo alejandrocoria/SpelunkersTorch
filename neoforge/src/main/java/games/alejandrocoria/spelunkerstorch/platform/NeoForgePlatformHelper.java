@@ -63,11 +63,6 @@ public class NeoForgePlatformHelper implements IPlatformHelper {
     }
 
     @Override
-    public BakedModel getModel(ModelManager dispatcher, ResourceLocation id) {
-        return dispatcher.getModel(id);
-    }
-
-    @Override
     public <T extends BlockEntity> Supplier<BlockEntityType<T>> registerBlockEntity(String key, Supplier<BlockEntityType<T>> type) {
         return SpelunkersTorchNeoForge.BLOCK_ENTITY_TYPE.register(key, type);
     }

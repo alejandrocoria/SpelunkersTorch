@@ -4,10 +4,13 @@ import games.alejandrocoria.spelunkerstorch.Constants;
 import games.alejandrocoria.spelunkerstorch.SpelunkersTorch;
 import games.alejandrocoria.spelunkerstorch.client.SpelunkersTorchClient;
 import games.alejandrocoria.spelunkerstorch.common.block.Torch;
+import games.alejandrocoria.spelunkerstorch.common.pathfinding.Path;
+import games.alejandrocoria.spelunkerstorch.common.pathfinding.PathFinder;
 import games.alejandrocoria.spelunkerstorch.common.util.Util;
 import net.minecraft.FieldsAreNonnullByDefault;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.Level;
@@ -39,6 +42,7 @@ public class TorchEntity extends BlockEntity {
     @Nullable
     private BlockPos target = TARGET_NOT_CALCULATED;
     private List<BlockPos> incoming = new ArrayList<>();
+    private List<BlockPos> path = new ArrayList<>();
     @Nullable
     private Quaternionf cachedRotation;
 
@@ -60,6 +64,10 @@ public class TorchEntity extends BlockEntity {
         return this.incoming;
     }
 
+    public List<BlockPos> getPath() {
+        return this.path;
+    }
+
     @Nullable
     public Quaternionf getRotation() {
         if (this.cachedRotation == null) {
@@ -79,18 +87,17 @@ public class TorchEntity extends BlockEntity {
 
         this.setBlock();
 
-        List<TorchEntity> nearbyTorches = SpelunkersTorch.getNearbyTorchEntities(this.level, this.worldPosition);
-        TorchEntity targetEntity = nearbyTorches.stream()
-                .filter(t -> t.date < this.date)
-                .min(this::distanceComparator)
-                .orElse(null);
+        PathFinder pathFinder = new PathFinder(this.level, this.worldPosition);
+        Path result = pathFinder.calculateMinPath();
 
-        if (targetEntity != null) {
-            this.target = targetEntity.getBlockPos();
+        if (result != null) {
+            this.path = result.positions;
+            this.target = this.path.getLast();
             this.setBlock();
-            targetEntity.addIncoming(this.worldPosition);
+            SpelunkersTorch.getTorchEntity(this.level, this.target).ifPresent((t) -> t.addIncoming(this.worldPosition));
         } else {
             this.target = null;
+            this.path.clear();
         }
     }
 
@@ -120,7 +127,7 @@ public class TorchEntity extends BlockEntity {
         }
     }
 
-    private int distanceComparator(TorchEntity t1, TorchEntity t2) {
+    public int distanceComparator(TorchEntity t1, TorchEntity t2) {
         int distance1 = this.worldPosition.distManhattan(t1.worldPosition);
         int distance2 = this.worldPosition.distManhattan(t2.worldPosition);
         if (distance1 == distance2) {
@@ -147,7 +154,7 @@ public class TorchEntity extends BlockEntity {
     public void setLevel(Level level) {
         super.setLevel(level);
         if (this.level != null && this.level.isClientSide()) {
-            SpelunkersTorchClient.torchEntityAddOrRemoved(this);
+            SpelunkersTorchClient.torchEntityAddedOrRemoved(this);
         }
     }
 
@@ -155,7 +162,7 @@ public class TorchEntity extends BlockEntity {
     public void setRemoved() {
         super.setRemoved();
         if (this.level != null && this.level.isClientSide()) {
-            SpelunkersTorchClient.torchEntityAddOrRemoved(this);
+            SpelunkersTorchClient.torchEntityAddedOrRemoved(this);
         }
     }
 
@@ -163,14 +170,14 @@ public class TorchEntity extends BlockEntity {
     public void clearRemoved() {
         super.clearRemoved();
         if (this.level != null && this.level.isClientSide()) {
-            SpelunkersTorchClient.torchEntityAddOrRemoved(this);
+            SpelunkersTorchClient.torchEntityAddedOrRemoved(this);
         }
     }
 
     @Override
-    protected void saveAdditional(CompoundTag nbt) {
+    protected void saveAdditional(CompoundTag nbt, HolderLookup.Provider registries) {
         try {
-            super.saveAdditional(nbt);
+            super.saveAdditional(nbt, registries);
             nbt.putLong("Date", this.date);
 
             if (this.hasTarget()) {
@@ -182,15 +189,21 @@ public class TorchEntity extends BlockEntity {
                         .mapToLong(BlockPos::asLong)
                         .toArray());
             }
+
+            if (!this.path.isEmpty()) {
+                nbt.putLongArray("Path", this.path.stream()
+                        .mapToLong(BlockPos::asLong)
+                        .toArray());
+            }
         } catch (Exception e) {
             Constants.LOG.error("Error in TorchEntity.saveAdditional", e);
         }
     }
 
     @Override
-    public void load(CompoundTag nbt) {
+    public void loadAdditional(CompoundTag nbt, HolderLookup.Provider registries) {
         try {
-            super.load(nbt);
+            super.loadAdditional(nbt, registries);
             this.date = nbt.getLong("Date");
 
             this.target = null;
@@ -201,6 +214,13 @@ public class TorchEntity extends BlockEntity {
             this.incoming.clear();
             if (nbt.contains("Incoming")) {
                 this.incoming = Arrays.stream(nbt.getLongArray("Incoming"))
+                        .mapToObj(BlockPos::of)
+                        .collect(Collectors.toCollection(ArrayList::new));
+            }
+
+            this.path.clear();
+            if (nbt.contains("Path")) {
+                this.path = Arrays.stream(nbt.getLongArray("Path"))
                         .mapToObj(BlockPos::of)
                         .collect(Collectors.toCollection(ArrayList::new));
             }
@@ -217,8 +237,8 @@ public class TorchEntity extends BlockEntity {
     }
 
     @Override
-    public CompoundTag getUpdateTag() {
-        return this.saveWithoutMetadata();
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        return this.saveWithoutMetadata(registries);
     }
 
     @Nullable

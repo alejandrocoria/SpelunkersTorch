@@ -1,20 +1,29 @@
 package games.alejandrocoria.spelunkerstorch;
 
 import games.alejandrocoria.spelunkerstorch.common.block.entity.TorchEntity;
+import games.alejandrocoria.spelunkerstorch.common.pathfinding.PathFindingCache;
+import it.unimi.dsi.fastutil.longs.LongAVLTreeSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.objects.Object2ObjectAVLTreeMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Cursor3D;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -23,6 +32,9 @@ import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_ENTITY;
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
 public class SpelunkersTorch {
+    private static final Object2ObjectMap<ServerLevel, LongSet> sectionsToUpdate = new Object2ObjectAVLTreeMap<>(Comparator.comparingInt(Object::hashCode));
+    private static long lastAddedSectionToUpdate = Long.MAX_VALUE;
+
     public static void init() {
     }
 
@@ -41,11 +53,10 @@ public class SpelunkersTorch {
         }
     }
 
-    public static List<TorchEntity> getNearbyTorchEntities(Level level, BlockPos blockPos) {
-        SectionPos torchSection = SectionPos.of(blockPos);
+    public static List<TorchEntity> getTorchesInNearbySections(Level level, SectionPos sectionPos) {
         List<ChunkAccess> chunks = new ArrayList<>();
-        for (int z = torchSection.z() - 1; z < torchSection.z() + 2; ++z) {
-            for (int x = torchSection.x() - 1; x < torchSection.x() + 2; ++x) {
+        for (int z = sectionPos.z() - 1; z < sectionPos.z() + 2; ++z) {
+            for (int x = sectionPos.x() - 1; x < sectionPos.x() + 2; ++x) {
                 ChunkAccess chunk = level.getChunk(x, z, ChunkStatus.FULL, false);
                 if (chunk != null) {
                     chunks.add(chunk);
@@ -58,8 +69,7 @@ public class SpelunkersTorch {
         for (ChunkAccess chunk : chunks) {
             Set<BlockPos> entityPositions = chunk.getBlockEntitiesPos();
             for (BlockPos pos : entityPositions) {
-                int distance = pos.distManhattan(blockPos);
-                if (distance > 15 || distance == 0) {
+                if (pos.getY() < sectionPos.minBlockY() - 16 || pos.getY() > sectionPos.maxBlockY() + 16) {
                     continue;
                 }
                 Optional<TorchEntity> blockEntity = chunk.getBlockEntity(pos, TORCH_ENTITY.get());
@@ -70,14 +80,35 @@ public class SpelunkersTorch {
         return torches;
     }
 
+    public static List<TorchEntity> getNearbyTorchEntities(Level level, BlockPos blockPos) {
+        List<TorchEntity> torches = getTorchesInNearbySections(level, SectionPos.of(blockPos));
+        torches.removeIf((t) -> {
+            double distance = t.getBlockPos().distSqr(blockPos);
+            return distance > 16 * 16 || distance <= 0.5;
+        });
+
+        return torches;
+    }
+
+    public static Optional<TorchEntity> getTorchEntity(Level level, BlockPos blockPos) {
+        return level.getChunkAt(blockPos).getBlockEntity(blockPos, TORCH_ENTITY.get());
+    }
+
     public static int recalculateTorches(Level level) {
-        int count = 0;
-        if (level instanceof ServerLevel serverLevel) {
-            for (ChunkHolder chunkHolder : serverLevel.getChunkSource().chunkMap.getChunks()) {
-                count += SpelunkersTorch.recalculateTorches(level, chunkHolder.getPos());
+        try {
+            int count = 0;
+            if (level instanceof ServerLevel serverLevel) {
+                Iterable<ChunkHolder> chunks = serverLevel.getChunkSource().chunkMap.getChunks();
+                for (ChunkHolder chunkHolder : chunks) {
+                    count += SpelunkersTorch.recalculateTorches(level, chunkHolder.getPos());
+                }
             }
+            return count;
+        } catch (Exception e) {
+            Constants.LOG.error("Error in recalculateTorches", e);
         }
-        return count;
+
+        return 0;
     }
 
     public static int recalculateTorches(Level level, ChunkPos chunkPos) {
@@ -127,5 +158,39 @@ public class SpelunkersTorch {
                 .min((t1, t2) -> TorchEntity.distanceComparator(blockPos, t1, t2));
         closestTorch.ifPresent(TorchEntity::needNewTarget);
         return closestTorch.map(TorchEntity::getBlockPos).orElse(null);
+    }
+
+    public static void onBlockUpdated(ServerLevel level, BlockPos pos, BlockState blockState) {
+        PathFindingCache.removeIfChanged(pos, blockState);
+
+        SectionPos sectionPos = SectionPos.of(pos);
+        Cursor3D cursor = new Cursor3D(
+                sectionPos.x() - 1,
+                sectionPos.y() - 1,
+                sectionPos.z() - 1,
+                sectionPos.x() + 1,
+                sectionPos.y() + 1,
+                sectionPos.z() + 1);
+        while (cursor.advance()) {
+            LongSet sections = sectionsToUpdate.computeIfAbsent(level, (l) -> new LongAVLTreeSet());
+            sections.add(SectionPos.asLong(cursor.nextX(), cursor.nextY(), cursor.nextZ()));
+        }
+
+        lastAddedSectionToUpdate = System.currentTimeMillis();
+    }
+
+    public static void serverTick() {
+        if (lastAddedSectionToUpdate + 1000 > System.currentTimeMillis()) {
+            return;
+        }
+
+        for (Map.Entry<ServerLevel, LongSet> sections : sectionsToUpdate.entrySet()) {
+            for (long sec : sections.getValue()) {
+                recalculateTorches(sections.getKey(), SectionPos.of(sec));
+            }
+        }
+
+        sectionsToUpdate.clear();
+        lastAddedSectionToUpdate = Long.MAX_VALUE;
     }
 }
