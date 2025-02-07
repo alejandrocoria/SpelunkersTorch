@@ -11,8 +11,10 @@ import net.minecraft.FieldsAreNonnullByDefault;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -153,8 +155,12 @@ public class TorchEntity extends BlockEntity {
     @Override
     public void setLevel(Level level) {
         super.setLevel(level);
-        if (this.level != null && this.level.isClientSide()) {
-            SpelunkersTorchClient.torchEntityAddedOrRemoved(this);
+        if (this.level != null) {
+            if (this.level.isClientSide()) {
+                SpelunkersTorchClient.torchEntityAddedOrRemoved(this);
+            } else {
+                SpelunkersTorch.addSectionAndNeighborsToMonitor((ServerLevel) this.level, SectionPos.of(this.worldPosition));
+            }
         }
     }
 

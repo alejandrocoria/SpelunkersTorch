@@ -47,7 +47,7 @@ public class TorchRenderer implements BlockEntityRenderer<TorchEntity> {
         });
 
         renderNeedle(poseStack, rotation, multiBufferSource, light, overlay);
-        renderDebugPath(poseStack, torchEntity.getBlockPos(), torchEntity.getPath(), multiBufferSource, light, overlay);
+//        renderDebugPath(poseStack, torchEntity.getBlockPos(), torchEntity.getPath(), multiBufferSource, light, overlay);
 
         poseStack.popPose();
     }

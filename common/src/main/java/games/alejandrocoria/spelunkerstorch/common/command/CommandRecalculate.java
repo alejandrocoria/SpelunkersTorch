@@ -63,7 +63,7 @@ public class CommandRecalculate {
         if (ctx.getSource().getPlayer() != null) {
             BlockPos torchPos = SpelunkersTorch.recalculateClosestTorch(ctx.getSource().getLevel(), ctx.getSource().getPlayer().blockPosition());
             if (torchPos != null && ctx.getSource().isPlayer()) {
-                ctx.getSource().getPlayer().sendSystemMessage(Component.translatable("chat.spelunkerstorch.recalculated_single", torchPos));
+                ctx.getSource().getPlayer().sendSystemMessage(Component.translatable("chat.spelunkerstorch.recalculated_single", torchPos.toShortString()));
             }
             return torchPos == null ? 0 : 1;
         }

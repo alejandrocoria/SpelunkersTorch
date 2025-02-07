@@ -12,6 +12,7 @@ import net.minecraft.core.Cursor3D;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -32,8 +33,11 @@ import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_ENTITY;
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
 public class SpelunkersTorch {
+    private static final int WAIT_TIME_TO_UPDATE = 10;
+
     private static final Object2ObjectMap<ServerLevel, LongSet> sectionsToUpdate = new Object2ObjectAVLTreeMap<>(Comparator.comparingInt(Object::hashCode));
     private static long lastAddedSectionToUpdate = Long.MAX_VALUE;
+    private static final Object2ObjectMap<ServerLevel, LongSet> sectionsToMonitor = new Object2ObjectAVLTreeMap<>(Comparator.comparingInt(Object::hashCode));
 
     public static void init() {
     }
@@ -161,26 +165,22 @@ public class SpelunkersTorch {
     }
 
     public static void onBlockUpdated(ServerLevel level, BlockPos pos, BlockState blockState) {
-        PathFindingCache.removeIfChanged(pos, blockState);
-
         SectionPos sectionPos = SectionPos.of(pos);
-        Cursor3D cursor = new Cursor3D(
-                sectionPos.x() - 1,
-                sectionPos.y() - 1,
-                sectionPos.z() - 1,
-                sectionPos.x() + 1,
-                sectionPos.y() + 1,
-                sectionPos.z() + 1);
-        while (cursor.advance()) {
-            LongSet sections = sectionsToUpdate.computeIfAbsent(level, (l) -> new LongAVLTreeSet());
-            sections.add(SectionPos.asLong(cursor.nextX(), cursor.nextY(), cursor.nextZ()));
+
+        LongSet sections = sectionsToMonitor.get(level);
+        if (sections == null || !sections.contains(sectionPos.asLong())) {
+            return;
         }
 
-        lastAddedSectionToUpdate = System.currentTimeMillis();
+        PathFindingCache.removeIfChanged(pos, blockState);
+        addSectionAndNeighborsToMap(level, sectionPos, sectionsToUpdate);
+        if (lastAddedSectionToUpdate - WAIT_TIME_TO_UPDATE > System.currentTimeMillis()) {
+            lastAddedSectionToUpdate = System.currentTimeMillis();
+        }
     }
 
     public static void serverTick() {
-        if (lastAddedSectionToUpdate + 1000 > System.currentTimeMillis()) {
+        if (lastAddedSectionToUpdate + WAIT_TIME_TO_UPDATE > System.currentTimeMillis()) {
             return;
         }
 
@@ -188,9 +188,31 @@ public class SpelunkersTorch {
             for (long sec : sections.getValue()) {
                 recalculateTorches(sections.getKey(), SectionPos.of(sec));
             }
+
+            if (!sections.getValue().isEmpty()) {
+                Constants.LOG.info("Updated {} sections", sections.getValue().size());
+            }
         }
 
         sectionsToUpdate.clear();
         lastAddedSectionToUpdate = Long.MAX_VALUE;
+    }
+
+    public static void addSectionAndNeighborsToMonitor(ServerLevel level, SectionPos sectionPos) {
+        addSectionAndNeighborsToMap(level, sectionPos, sectionsToMonitor);
+    }
+
+    private static void addSectionAndNeighborsToMap(ServerLevel level, SectionPos sectionPos, Object2ObjectMap<ServerLevel, LongSet> targetMap) {
+        LongSet sections = targetMap.computeIfAbsent(level, (l) -> new LongAVLTreeSet());
+        Cursor3D cursor = new Cursor3D(
+                sectionPos.x() - 1,
+                Mth.clamp(sectionPos.y() - 1, -4, 20),
+                sectionPos.z() - 1,
+                sectionPos.x() + 1,
+                Mth.clamp(sectionPos.y() + 1, -4, 20),
+                sectionPos.z() + 1);
+        while (cursor.advance()) {
+            sections.add(SectionPos.asLong(cursor.nextX(), cursor.nextY(), cursor.nextZ()));
+        }
     }
 }

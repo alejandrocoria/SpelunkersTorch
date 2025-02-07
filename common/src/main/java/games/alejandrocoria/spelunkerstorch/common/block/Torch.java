@@ -47,7 +47,6 @@ public class Torch extends TorchBlock implements EntityBlock {
         return TorchEntity.createTicker(level, blockEntityType);
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void onRemove(BlockState blockState, Level level, BlockPos blockPos, BlockState blockState2, boolean bl) {
         if (!blockState.is(blockState2.getBlock())) {
