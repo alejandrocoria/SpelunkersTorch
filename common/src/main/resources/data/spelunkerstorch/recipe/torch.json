@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "|": {
+      "item": "minecraft:stick"
+    },
+    "C": [
+      {
+        "item": "minecraft:coal"
+      },
+      {
+        "item": "minecraft:charcoal"
+      }
+    ],
+    "n": {
+      "item": "minecraft:iron_nugget"
+    }
+  },
+  "pattern": [
+    "Cn",
+    "| "
+  ],
+  "result": {
+    "count": 7,
+    "id": "spelunkerstorch:torch"
+  },
+  "show_notification": true
+}
