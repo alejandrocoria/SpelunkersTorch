@@ -1,6 +1,5 @@
 package games.alejandrocoria.spelunkerstorch;
 
-
 import games.alejandrocoria.spelunkerstorch.client.SpelunkersTorchClientNeoForge;
 import games.alejandrocoria.spelunkerstorch.common.command.CommandRecalculate;
 import net.minecraft.core.registries.BuiltInRegistries;

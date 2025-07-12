@@ -2,20 +2,16 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "|": {
-      "item": "minecraft:stick"
-    },
-    "C": [
-      {
-        "item": "minecraft:coal"
-      },
-      {
-        "item": "minecraft:charcoal"
-      }
+    "|": [
+      "minecraft:stick"
     ],
-    "n": {
-      "item": "minecraft:iron_nugget"
-    }
+    "C": [
+      "minecraft:coal",
+      "minecraft:charcoal"
+    ],
+    "n": [
+      "minecraft:iron_nugget"
+    ]
   },
   "pattern": [
     "Cn",

@@ -1,0 +1,12 @@
+{
+  "model": {
+    "type": "minecraft:special",
+
+    "base": "minecraft:item/torch",
+    "model": {
+      "type": "spelunkerstorch:torch",
+
+      "default": "torch"
+    }
+  }
+}

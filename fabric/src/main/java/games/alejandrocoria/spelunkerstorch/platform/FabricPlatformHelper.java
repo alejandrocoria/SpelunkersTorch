@@ -43,8 +43,8 @@ public class FabricPlatformHelper implements IPlatformHelper {
     }
 
     @Override
-    public Supplier<Item> createStandingAndWallBlockItem(Supplier<Block> standingBlock, Supplier<Block> wallBlock, Item.Properties properties, Direction direction) {
-        return () -> new StandingAndWallBlockItem(standingBlock.get(), wallBlock.get(), properties, direction);
+    public Supplier<Item> createStandingAndWallBlockItem(Supplier<Block> standingBlock, Supplier<Block> wallBlock, Direction direction, Item.Properties properties) {
+        return () -> new StandingAndWallBlockItem(standingBlock.get(), wallBlock.get(), direction, properties);
     }
 
     @Override

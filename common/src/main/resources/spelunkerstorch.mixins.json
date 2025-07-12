@@ -4,7 +4,9 @@
   "package": "games.alejandrocoria.spelunkerstorch.common.mixin",
   "refmap": "${mod_id}.refmap.json",
   "compatibilityLevel": "JAVA_17",
-  "client": [],
+  "client": [
+    "client.SpecialModelRenderersMixin"
+  ],
   "server": [],
   "injectors": {
     "defaultRequire": 1

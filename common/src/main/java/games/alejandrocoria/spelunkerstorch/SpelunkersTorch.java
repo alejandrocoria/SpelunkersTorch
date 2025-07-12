@@ -202,14 +202,18 @@ public class SpelunkersTorch {
         addSectionAndNeighborsToMap(level, sectionPos, sectionsToMonitor);
     }
 
+    public static void updateSectionAndNeighbors(ServerLevel level, SectionPos sectionPos) {
+        addSectionAndNeighborsToMap(level, sectionPos, sectionsToUpdate);
+    }
+
     private static void addSectionAndNeighborsToMap(ServerLevel level, SectionPos sectionPos, Object2ObjectMap<ServerLevel, LongSet> targetMap) {
         LongSet sections = targetMap.computeIfAbsent(level, (l) -> new LongAVLTreeSet());
         Cursor3D cursor = new Cursor3D(
                 sectionPos.x() - 1,
-                Mth.clamp(sectionPos.y() - 1, -4, 20),
+                Mth.clamp(sectionPos.y() - 1, level.getMinSectionY(), level.getMaxSectionY()),
                 sectionPos.z() - 1,
                 sectionPos.x() + 1,
-                Mth.clamp(sectionPos.y() + 1, -4, 20),
+                Mth.clamp(sectionPos.y() + 1, level.getMinSectionY(), level.getMaxSectionY()),
                 sectionPos.z() + 1);
         while (cursor.advance()) {
             sections.add(SectionPos.asLong(cursor.nextX(), cursor.nextY(), cursor.nextZ()));

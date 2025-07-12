@@ -25,7 +25,7 @@ public class SpelunkersTorchClient {
     private static SectionPos lastPlayerPosition = INVALID_PLAYER_POSITION;
     private static List<TorchEntity> closestTorches = new ArrayList<>();
 
-    public static void init() {
+    public static void registerBlockEntityRenderer() {
         BlockEntityRenderers.register(TORCH_ENTITY.get(), TorchRenderer::new);
     }
 

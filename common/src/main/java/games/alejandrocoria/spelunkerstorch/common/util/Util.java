@@ -15,4 +15,14 @@ public class Util {
         rotation.mul(new Quaternionf(new AxisAngle4f(angleX, 1, 0, 0)));
         return rotation;
     }
+
+    public static Vector3f getNormal(Vector3f v1, Vector3f v2, Vector3f v3) {
+        Vector3f a = new Vector3f();
+        Vector3f b = new Vector3f();
+        Vector3f dir = new Vector3f();
+        v1.sub(v2, a);
+        v1.sub(v3, b);
+        a.cross(b, dir);
+        return dir.normalize();
+    }
 }

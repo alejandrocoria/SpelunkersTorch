@@ -22,10 +22,10 @@ public class PathFindingSection {
             if (chunk == null) {
                 return;
             }
-            if (pos.y() < chunk.getMinSection() || pos.y() > chunk.getMaxSection()) {
+            if (pos.y() < chunk.getMinSectionY() || pos.y() > chunk.getMaxSectionY()) {
                 return;
             }
-            if (chunk.isSectionEmpty(pos.y())) {
+            if (chunk.getSection(chunk.getSectionIndex(pos.y())).hasOnlyAir()) {
                 return;
             }
 

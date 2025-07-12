@@ -1,7 +1,6 @@
 package games.alejandrocoria.spelunkerstorch.common.block;
 
 import com.mojang.serialization.MapCodec;
-import games.alejandrocoria.spelunkerstorch.SpelunkersTorch;
 import games.alejandrocoria.spelunkerstorch.common.block.entity.TorchEntity;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
@@ -45,14 +44,6 @@ public class Torch extends TorchBlock implements EntityBlock {
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState blockState, BlockEntityType<T> blockEntityType) {
         return TorchEntity.createTicker(level, blockEntityType);
-    }
-
-    @Override
-    public void onRemove(BlockState blockState, Level level, BlockPos blockPos, BlockState blockState2, boolean bl) {
-        if (!blockState.is(blockState2.getBlock())) {
-            SpelunkersTorch.updateNearbyOnRemove(level, blockPos);
-        }
-        super.onRemove(blockState, level, blockPos, blockState2, bl);
     }
 
     @Override

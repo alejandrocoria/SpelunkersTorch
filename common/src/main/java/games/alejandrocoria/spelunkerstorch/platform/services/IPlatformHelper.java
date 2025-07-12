@@ -21,7 +21,7 @@ public interface IPlatformHelper {
 
     Supplier<Item> registerItem(String key, Supplier<Item> item);
 
-    Supplier<Item> createStandingAndWallBlockItem(Supplier<Block> standingBlock, Supplier<Block> wallBlock, Item.Properties properties, Direction direction);
+    Supplier<Item> createStandingAndWallBlockItem(Supplier<Block> standingBlock, Supplier<Block> wallBlock, Direction direction, Item.Properties properties);
 
     <T extends BlockEntity> Supplier<BlockEntityType<T>> registerBlockEntity(String key, Supplier<BlockEntityType<T>> type);
 }

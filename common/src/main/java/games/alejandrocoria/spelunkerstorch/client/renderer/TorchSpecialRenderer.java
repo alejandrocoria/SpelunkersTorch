@@ -1,7 +1,8 @@
 package games.alejandrocoria.spelunkerstorch.client.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import games.alejandrocoria.spelunkerstorch.Constants;
+import com.mojang.serialization.MapCodec;
+import games.alejandrocoria.spelunkerstorch.Registry;
 import games.alejandrocoria.spelunkerstorch.client.SpelunkersTorchClient;
 import games.alejandrocoria.spelunkerstorch.common.block.entity.TorchEntity;
 import games.alejandrocoria.spelunkerstorch.common.util.Util;
@@ -9,89 +10,62 @@ import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.EntityModelSet;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.Sheets;
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
-import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.client.resources.model.ModelResourceLocation;
+import net.minecraft.client.renderer.block.ModelBlockRenderer;
+import net.minecraft.client.renderer.block.model.BlockStateModel;
+import net.minecraft.client.renderer.special.NoDataSpecialModelRenderer;
+import net.minecraft.client.renderer.special.SpecialModelRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import org.joml.AxisAngle4f;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+import java.util.Set;
 
-import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_BLOCK;
-import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_ITEM;
-
-@MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public class TorchBlockEntityWithoutLevelRenderer extends BlockEntityWithoutLevelRenderer {
-    private static final ModelResourceLocation TORCH_MODEL = new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "torch"), "has_target=false");
-
-    public TorchBlockEntityWithoutLevelRenderer(BlockEntityRenderDispatcher renderDispatcher, EntityModelSet entityModelSet) {
-        super(renderDispatcher, entityModelSet);
+@MethodsReturnNonnullByDefault
+public class TorchSpecialRenderer implements NoDataSpecialModelRenderer {
+    public TorchSpecialRenderer() {
     }
 
-    @Override
-    public void renderByItem(ItemStack itemStack, ItemDisplayContext type, PoseStack poseStack, MultiBufferSource multiBufferSource, int light, int overlay) {
-        Item item = itemStack.getItem();
-        if (item != TORCH_ITEM.get()) {
-            return;
-        }
-
+    public void render(ItemDisplayContext displayContext, PoseStack poseStack, MultiBufferSource bufferSource, int light, int overlay, boolean hasFoilType) {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null || Minecraft.getInstance().level == null) {
             return;
         }
 
-        poseStack.pushPose();
-
-        boolean inHand = type.firstPerson() || type == ItemDisplayContext.THIRD_PERSON_LEFT_HAND || type == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND;
-        if (type.firstPerson()) {
-            double xOffset = 0.35;
-            if (type == ItemDisplayContext.FIRST_PERSON_LEFT_HAND) {
-                xOffset *= -1;
-            }
-            poseStack.translate(xOffset, 0, -0.25);
-        } else if (type == ItemDisplayContext.THIRD_PERSON_LEFT_HAND || type == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND) {
-            poseStack.translate(0, 0.2, 0);
-        }
-
-        poseStack.pushPose();
-        if (type.firstPerson()) {
+        if (displayContext.firstPerson()) {
+            poseStack.pushPose();
             poseStack.translate(0, -0.1, 0);
             Quaternionf rotation = new Quaternionf(new AxisAngle4f(-0.35f, 1, 0, 0));
             poseStack.rotateAround(rotation, 0, 0.75f, 0);
         }
 
-        BakedModel blockModel = Minecraft.getInstance().getModelManager().getModel(TORCH_MODEL);
-        Minecraft.getInstance().getBlockRenderer().getModelRenderer().renderModel(
+        BlockStateModel blockStateModel = Minecraft.getInstance().getBlockRenderer().getBlockModel(Registry.TORCH_BLOCK.get().defaultBlockState());
+        ModelBlockRenderer.renderModel(
                 poseStack.last(),
-                multiBufferSource.getBuffer(Sheets.cutoutBlockSheet()),
-                TORCH_BLOCK.get().defaultBlockState(),
-                blockModel,
+                bufferSource.getBuffer(Sheets.cutoutBlockSheet()),
+                blockStateModel,
                 1f, 1f, 0f,
                 light, overlay);
 
-        poseStack.popPose();
+        if (displayContext.firstPerson()) {
+            poseStack.popPose();
 
-        if (inHand) {
             Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
             List<TorchEntity> nearbyTorches = SpelunkersTorchClient.getTorchesInNearbySections(Minecraft.getInstance().level, SectionPos.of(BlockPos.containing(cameraPos)));
             if (!nearbyTorches.isEmpty()) {
                 Quaternionf needleRotation = calculateNeedleRotation(player, cameraPos, nearbyTorches);
                 if (needleRotation != null) {
-                    TorchRenderer.renderNeedle(poseStack, needleRotation, multiBufferSource, light, overlay);
+                    TorchRenderer.renderNeedle(poseStack, needleRotation, bufferSource, light, overlay);
                 }
             }
         } else {
@@ -100,12 +74,10 @@ public class TorchBlockEntityWithoutLevelRenderer extends BlockEntityWithoutLeve
 
             Quaternionf rotation = new Quaternionf(new AxisAngle4f(Mth.HALF_PI, 0, 1, 0));
             rotation.mul(new Quaternionf(new AxisAngle4f(-Mth.HALF_PI / 2, 1, 0, 0)));
-            TorchRenderer.renderNeedle(poseStack, rotation, multiBufferSource, light, overlay);
+            TorchRenderer.renderNeedle(poseStack, rotation, bufferSource, light, overlay);
 
             poseStack.popPose();
         }
-
-        poseStack.popPose();
     }
 
     @Nullable
@@ -142,7 +114,7 @@ public class TorchBlockEntityWithoutLevelRenderer extends BlockEntityWithoutLeve
             if (closest != null) {
                 closest = closest.subtract(cameraPos);
                 double factor = 1.0 / closest.lengthSqr();
-                closest.scale(factor);
+                closest = closest.scale(factor);
                 pathSum = pathSum.add(closest);
                 if (distanceToClosest < distanceToClosestPath) {
                     distanceToClosestPath = distanceToClosest;
@@ -161,8 +133,9 @@ public class TorchBlockEntityWithoutLevelRenderer extends BlockEntityWithoutLeve
 
         float rotX = player.getViewXRot(1) * Mth.DEG_TO_RAD;
         float rotY = player.getViewYRot(1) * Mth.DEG_TO_RAD;
-        averageSum = averageSum.yRot(rotY + Mth.PI);
-        averageSum = averageSum.xRot(-rotX);
+        averageSum = averageSum.yRot(rotY);
+        averageSum = averageSum.xRot(rotX);
+        averageSum = averageSum.yRot(-Mth.PI / 2);
 
         return Util.getRotation(averageSum);
     }
@@ -181,5 +154,23 @@ public class TorchBlockEntityWithoutLevelRenderer extends BlockEntityWithoutLeve
         }
 
         return a.add(ab.scale(dotApAb / ab.lengthSqr()));
+    }
+
+    @Override
+    public void getExtents(Set<Vector3f> set) {
+        set.isEmpty();
+    }
+
+
+    public record Unbaked() implements SpecialModelRenderer.Unbaked {
+        public static final MapCodec<TorchSpecialRenderer.Unbaked> MAP_CODEC = MapCodec.unit(new TorchSpecialRenderer.Unbaked());
+
+        public MapCodec<TorchSpecialRenderer.Unbaked> type() {
+            return MAP_CODEC;
+        }
+
+        public SpecialModelRenderer<?> bake(EntityModelSet modelSet) {
+            return new TorchSpecialRenderer();
+        }
     }
 }

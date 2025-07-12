@@ -1,25 +1,17 @@
 package games.alejandrocoria.spelunkerstorch.platform;
 
 import games.alejandrocoria.spelunkerstorch.SpelunkersTorchForge;
-import games.alejandrocoria.spelunkerstorch.client.SpelunkersTorchClientForge;
 import games.alejandrocoria.spelunkerstorch.platform.services.IPlatformHelper;
 import net.minecraft.MethodsReturnNonnullByDefault;
-import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
-import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.client.resources.model.ModelManager;
-import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.StandingAndWallBlockItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import net.minecraftforge.fml.ModList;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 @MethodsReturnNonnullByDefault
@@ -46,21 +38,8 @@ public class ForgePlatformHelper implements IPlatformHelper {
     }
 
     @Override
-    public Supplier<Item> createStandingAndWallBlockItem(Supplier<Block> standingBlock, Supplier<Block> wallBlock, Item.Properties properties, Direction direction) {
-        return () -> new StandingAndWallBlockItem(standingBlock.get(), wallBlock.get(), properties, direction) {
-            @Override
-            public void initializeClient(Consumer<IClientItemExtensions> consumer) {
-                Item item = this;
-
-                consumer.accept(new IClientItemExtensions() {
-                    @Override
-                    public BlockEntityWithoutLevelRenderer getCustomRenderer() {
-                        BlockEntityWithoutLevelRenderer renderer = SpelunkersTorchClientForge.getItemRenderer(item);
-                        return renderer == null ? IClientItemExtensions.super.getCustomRenderer() : renderer;
-                    }
-                });
-            }
-        };
+    public Supplier<Item> createStandingAndWallBlockItem(Supplier<Block> standingBlock, Supplier<Block> wallBlock, Direction direction, Item.Properties properties) {
+        return () -> new StandingAndWallBlockItem(standingBlock.get(), wallBlock.get(), direction, properties);
     }
 
     @Override
