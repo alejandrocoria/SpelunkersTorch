@@ -1,15 +1,12 @@
 package games.alejandrocoria.spelunkerstorch;
 
 import games.alejandrocoria.spelunkerstorch.client.SpelunkersTorchClientForge;
-import games.alejandrocoria.spelunkerstorch.client.renderer.TorchSpecialRenderer;
 import games.alejandrocoria.spelunkerstorch.common.command.CommandRecalculate;
-import net.minecraft.client.renderer.special.SpecialModelRenderers;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraftforge.client.event.CreateSpecialBlockRendererEvent;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -18,12 +15,12 @@ import net.minecraftforge.eventbus.api.bus.BusGroup;
 import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.lang.invoke.MethodHandles;
 
-import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_BLOCK;
 import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_ITEM;
 
 @Mod(Constants.MOD_ID)
@@ -46,8 +43,10 @@ public class SpelunkersTorchForge {
         MinecraftForge.EVENT_BUS.register(MethodHandles.lookup(), SpelunkersTorchForge.class);
         modBusGroup.register(MethodHandles.lookup(), SpelunkersTorchForge.class);
 
-        MinecraftForge.EVENT_BUS.register(MethodHandles.lookup(), SpelunkersTorchClientForge.class);
-        modBusGroup.register(MethodHandles.lookup(), SpelunkersTorchClientForge.class);
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            MinecraftForge.EVENT_BUS.register(MethodHandles.lookup(), SpelunkersTorchClientForge.class);
+            modBusGroup.register(MethodHandles.lookup(), SpelunkersTorchClientForge.class);
+        }
 
         Constants.LOG.info("Spelunker's Torch common init done");
     }
@@ -67,11 +66,5 @@ public class SpelunkersTorchForge {
     @SubscribeEvent
     public static void serverTick(TickEvent.ServerTickEvent event) {
         SpelunkersTorch.serverTick();
-    }
-
-    @SubscribeEvent
-    public static void createSpecialBlockRendererEvent(CreateSpecialBlockRendererEvent event) {
-        SpecialModelRenderers.ID_MAPPER.put(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "torch"), TorchSpecialRenderer.Unbaked.MAP_CODEC);
-        event.register(TORCH_BLOCK.get(), new TorchSpecialRenderer.Unbaked());
     }
 }
