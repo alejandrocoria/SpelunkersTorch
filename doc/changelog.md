@@ -1,3 +1,6 @@
+**Beta 4:**
+* Changed: updating torches in sections only when neighboring chunks are loaded.
+
 **Beta 3:**
 * Fixed: recipe not working.
 
