@@ -3,9 +3,11 @@ package games.alejandrocoria.spelunkerstorch;
 import games.alejandrocoria.spelunkerstorch.common.block.entity.TorchEntity;
 import games.alejandrocoria.spelunkerstorch.common.pathfinding.PathFindingCache;
 import it.unimi.dsi.fastutil.longs.LongAVLTreeSet;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Cursor3D;
@@ -33,10 +35,10 @@ import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_ENTITY;
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
 public class SpelunkersTorch {
-    private static final int WAIT_TIME_TO_UPDATE = 10;
+    private static final int WAIT_TIME_TO_UPDATE = 100;
 
     private static final Object2ObjectMap<ServerLevel, LongSet> sectionsToUpdate = new Object2ObjectAVLTreeMap<>(Comparator.comparingInt(Object::hashCode));
-    private static long lastAddedSectionToUpdate = Long.MAX_VALUE;
+    private static long lastAddedSectionToUpdate = Long.MAX_VALUE - WAIT_TIME_TO_UPDATE;
     private static final Object2ObjectMap<ServerLevel, LongSet> sectionsToMonitor = new Object2ObjectAVLTreeMap<>(Comparator.comparingInt(Object::hashCode));
 
     public static void init() {
@@ -116,33 +118,37 @@ public class SpelunkersTorch {
     }
 
     public static int recalculateTorches(Level level, ChunkPos chunkPos) {
+        if (!allNeighborsChunksLoaded(level, chunkPos)) {
+            return -1;
+        }
+
         int count = 0;
         ChunkAccess chunk = level.getChunk(chunkPos.x, chunkPos.z, ChunkStatus.FULL, false);
-        if (chunk != null) {
-            Set<BlockPos> entityPositions = chunk.getBlockEntitiesPos();
-            for (BlockPos pos : entityPositions) {
-                Optional<TorchEntity> blockEntity = chunk.getBlockEntity(pos, TORCH_ENTITY.get());
-                blockEntity.ifPresent(TorchEntity::needNewTarget);
-                if (blockEntity.isPresent()) {
-                    ++count;
-                }
+        Set<BlockPos> entityPositions = chunk.getBlockEntitiesPos();
+        for (BlockPos pos : entityPositions) {
+            Optional<TorchEntity> blockEntity = chunk.getBlockEntity(pos, TORCH_ENTITY.get());
+            blockEntity.ifPresent(TorchEntity::needNewTarget);
+            if (blockEntity.isPresent()) {
+                ++count;
             }
         }
         return count;
     }
 
     public static int recalculateTorches(Level level, SectionPos sectionPos) {
+        if (!allNeighborsChunksLoaded(level, sectionPos.chunk())) {
+            return -1;
+        }
+
         int count = 0;
         ChunkAccess chunk = level.getChunk(sectionPos.x(), sectionPos.z(), ChunkStatus.FULL, false);
-        if (chunk != null) {
-            Set<BlockPos> entityPositions = chunk.getBlockEntitiesPos();
-            for (BlockPos pos : entityPositions) {
-                if (pos.getY() / 16 == sectionPos.y()) {
-                    Optional<TorchEntity> blockEntity = chunk.getBlockEntity(pos, TORCH_ENTITY.get());
-                    blockEntity.ifPresent(TorchEntity::needNewTarget);
-                    if (blockEntity.isPresent()) {
-                        ++count;
-                    }
+        Set<BlockPos> entityPositions = chunk.getBlockEntitiesPos();
+        for (BlockPos pos : entityPositions) {
+            if (pos.getY() / 16 == sectionPos.y()) {
+                Optional<TorchEntity> blockEntity = chunk.getBlockEntity(pos, TORCH_ENTITY.get());
+                blockEntity.ifPresent(TorchEntity::needNewTarget);
+                if (blockEntity.isPresent()) {
+                    ++count;
                 }
             }
         }
@@ -162,6 +168,23 @@ public class SpelunkersTorch {
                 .min((t1, t2) -> TorchEntity.distanceComparator(blockPos, t1, t2));
         closestTorch.ifPresent(TorchEntity::needNewTarget);
         return closestTorch.map(TorchEntity::getBlockPos).orElse(null);
+    }
+
+    public static boolean allNeighborsChunksLoaded(Level level, ChunkPos chunkPos) {
+        Cursor3D cursor = new Cursor3D(
+                chunkPos.x - 1,
+                0,
+                chunkPos.z - 1,
+                chunkPos.x + 1,
+                0,
+                chunkPos.z + 1);
+        while (cursor.advance()) {
+            if (level.getChunk(cursor.nextX(), cursor.nextZ(), ChunkStatus.FULL, false) == null) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public static void onBlockUpdated(ServerLevel level, BlockPos pos, BlockState blockState) {
@@ -184,18 +207,26 @@ public class SpelunkersTorch {
             return;
         }
 
-        for (Map.Entry<ServerLevel, LongSet> sections : sectionsToUpdate.entrySet()) {
-            for (long sec : sections.getValue()) {
-                recalculateTorches(sections.getKey(), SectionPos.of(sec));
+        ObjectIterator<Map.Entry<ServerLevel, LongSet>> mapIterator = sectionsToUpdate.entrySet().iterator();
+        while (mapIterator.hasNext()) {
+            Map.Entry<ServerLevel, LongSet> entry = mapIterator.next();
+            LongIterator setIterator = entry.getValue().iterator();
+            while (setIterator.hasNext()) {
+                int count = recalculateTorches(entry.getKey(), SectionPos.of(setIterator.nextLong()));
+                if (count > -1) {
+                    setIterator.remove();
+                }
             }
-
-            if (!sections.getValue().isEmpty()) {
-                Constants.LOG.info("Updated {} sections", sections.getValue().size());
+            if (entry.getValue().isEmpty()) {
+                mapIterator.remove();
             }
         }
 
-        sectionsToUpdate.clear();
-        lastAddedSectionToUpdate = Long.MAX_VALUE;
+        if (sectionsToUpdate.isEmpty()) {
+            lastAddedSectionToUpdate = Long.MAX_VALUE - WAIT_TIME_TO_UPDATE;
+        } else {
+            lastAddedSectionToUpdate = System.currentTimeMillis();
+        }
     }
 
     public static void addSectionAndNeighborsToMonitor(ServerLevel level, SectionPos sectionPos) {
