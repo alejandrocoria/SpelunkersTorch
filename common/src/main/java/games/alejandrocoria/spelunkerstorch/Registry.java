@@ -23,7 +23,7 @@ public class Registry {
             () -> new Torch(BlockBehaviour.Properties.of()
                     .setId(ResourceKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "torch")))
                     .instabreak()
-                    .noCollission()
+                    .noCollision()
                     .lightLevel(s -> 14)
                     .sound(SoundType.WOOD)
                     .pushReaction(PushReaction.DESTROY)));
@@ -32,7 +32,7 @@ public class Registry {
             () -> new WallTorch(BlockBehaviour.Properties.of()
                     .setId(ResourceKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "wall_torch")))
                     .instabreak()
-                    .noCollission()
+                    .noCollision()
                     .lightLevel(s -> 14)
                     .sound(SoundType.WOOD)
                     .pushReaction(PushReaction.DESTROY)

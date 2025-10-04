@@ -1,7 +1,9 @@
 package games.alejandrocoria.spelunkerstorch;
 
 import games.alejandrocoria.spelunkerstorch.common.block.entity.TorchEntity;
+import games.alejandrocoria.spelunkerstorch.common.mixin.server.ChunkMapAccessor;
 import games.alejandrocoria.spelunkerstorch.common.pathfinding.PathFindingCache;
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongAVLTreeSet;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -104,9 +106,9 @@ public class SpelunkersTorch {
         try {
             int count = 0;
             if (level instanceof ServerLevel serverLevel) {
-                Iterable<ChunkHolder> chunks = serverLevel.getChunkSource().chunkMap.getChunks();
-                for (ChunkHolder chunkHolder : chunks) {
-                    count += SpelunkersTorch.recalculateTorches(level, chunkHolder.getPos());
+                Long2ObjectLinkedOpenHashMap<ChunkHolder> chunks = ((ChunkMapAccessor) serverLevel.getChunkSource().chunkMap).getVisibleChunkMap();
+                for (Long chunkPos : chunks.keySet()) {
+                    count += SpelunkersTorch.recalculateTorches(level, new ChunkPos(chunkPos));
                 }
             }
             return count;

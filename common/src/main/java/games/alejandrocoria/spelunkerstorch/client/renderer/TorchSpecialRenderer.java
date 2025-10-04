@@ -8,11 +8,9 @@ import games.alejandrocoria.spelunkerstorch.common.block.entity.TorchEntity;
 import games.alejandrocoria.spelunkerstorch.common.util.Util;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.geom.EntityModelSet;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.Sheets;
-import net.minecraft.client.renderer.block.ModelBlockRenderer;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.block.model.BlockStateModel;
 import net.minecraft.client.renderer.special.NoDataSpecialModelRenderer;
 import net.minecraft.client.renderer.special.SpecialModelRenderer;
@@ -36,12 +34,8 @@ public class TorchSpecialRenderer implements NoDataSpecialModelRenderer {
     public TorchSpecialRenderer() {
     }
 
-    public void render(ItemDisplayContext displayContext, PoseStack poseStack, MultiBufferSource bufferSource, int light, int overlay, boolean hasFoilType) {
-        LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null || Minecraft.getInstance().level == null) {
-            return;
-        }
-
+    @Override
+    public void submit(ItemDisplayContext displayContext, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int light, int overlay, boolean hasFoilType, int i) {
         if (displayContext.firstPerson()) {
             poseStack.pushPose();
             poseStack.translate(0, -0.1, 0);
@@ -50,12 +44,16 @@ public class TorchSpecialRenderer implements NoDataSpecialModelRenderer {
         }
 
         BlockStateModel blockStateModel = Minecraft.getInstance().getBlockRenderer().getBlockModel(Registry.TORCH_BLOCK.get().defaultBlockState());
-        ModelBlockRenderer.renderModel(
-                poseStack.last(),
-                bufferSource.getBuffer(Sheets.cutoutBlockSheet()),
+        submitNodeCollector.submitBlockModel(
+                poseStack,
+                Sheets.cutoutBlockSheet(),
                 blockStateModel,
-                1f, 1f, 0f,
-                light, overlay);
+                1f,
+                1f,
+                0f,
+                light,
+                overlay,
+                i);
 
         if (displayContext.firstPerson()) {
             poseStack.popPose();
@@ -63,9 +61,9 @@ public class TorchSpecialRenderer implements NoDataSpecialModelRenderer {
             Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
             List<TorchEntity> nearbyTorches = SpelunkersTorchClient.getTorchesInNearbySections(Minecraft.getInstance().level, SectionPos.of(BlockPos.containing(cameraPos)));
             if (!nearbyTorches.isEmpty()) {
-                Quaternionf needleRotation = calculateNeedleRotation(player, cameraPos, nearbyTorches);
+                Quaternionf needleRotation = calculateNeedleRotation(Minecraft.getInstance().player, cameraPos, nearbyTorches);
                 if (needleRotation != null) {
-                    TorchRenderer.renderNeedle(poseStack, needleRotation, bufferSource, light, overlay);
+                    TorchRenderer.renderNeedle(poseStack, needleRotation, light, submitNodeCollector);
                 }
             }
         } else {
@@ -74,7 +72,7 @@ public class TorchSpecialRenderer implements NoDataSpecialModelRenderer {
 
             Quaternionf rotation = new Quaternionf(new AxisAngle4f(Mth.HALF_PI, 0, 1, 0));
             rotation.mul(new Quaternionf(new AxisAngle4f(-Mth.HALF_PI / 2, 1, 0, 0)));
-            TorchRenderer.renderNeedle(poseStack, rotation, bufferSource, light, overlay);
+            TorchRenderer.renderNeedle(poseStack, rotation, light, submitNodeCollector);
 
             poseStack.popPose();
         }
@@ -158,19 +156,19 @@ public class TorchSpecialRenderer implements NoDataSpecialModelRenderer {
 
     @Override
     public void getExtents(Set<Vector3f> set) {
-        set.isEmpty();
     }
 
 
     public record Unbaked() implements SpecialModelRenderer.Unbaked {
         public static final MapCodec<TorchSpecialRenderer.Unbaked> MAP_CODEC = MapCodec.unit(new TorchSpecialRenderer.Unbaked());
 
-        public MapCodec<TorchSpecialRenderer.Unbaked> type() {
-            return MAP_CODEC;
+        @Override
+        public SpecialModelRenderer<?> bake(BakingContext bakingContext) {
+            return new TorchSpecialRenderer();
         }
 
-        public SpecialModelRenderer<?> bake(EntityModelSet modelSet) {
-            return new TorchSpecialRenderer();
+        public MapCodec<TorchSpecialRenderer.Unbaked> type() {
+            return MAP_CODEC;
         }
     }
 }

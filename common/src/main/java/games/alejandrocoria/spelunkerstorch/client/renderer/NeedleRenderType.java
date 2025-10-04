@@ -61,4 +61,9 @@ public class NeedleRenderType extends RenderType {
     public VertexFormat.Mode mode() {
         return null;
     }
+
+    @Override
+    public RenderPipeline pipeline() {
+        return NEEDLE_RENDER_TYPE_PIPELINE;
+    }
 }
