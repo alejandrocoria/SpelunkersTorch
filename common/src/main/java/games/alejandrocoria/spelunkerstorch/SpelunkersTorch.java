@@ -121,7 +121,7 @@ public class SpelunkersTorch {
 
     public static int recalculateTorches(Level level, ChunkPos chunkPos) {
         if (!allNeighborsChunksLoaded(level, chunkPos)) {
-            return -1;
+            return 0;
         }
 
         int count = 0;

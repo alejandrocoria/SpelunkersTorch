@@ -7,19 +7,17 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.client.event.CreateSpecialBlockRendererEvent;
+import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.bus.BusGroup;
-import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
-
-import java.lang.invoke.MethodHandles;
 
 import static games.alejandrocoria.spelunkerstorch.Registry.TORCH_ITEM;
 
@@ -40,31 +38,29 @@ public class SpelunkersTorchForge {
         SpelunkersTorch.init();
         Registry.init();
 
-        MinecraftForge.EVENT_BUS.register(MethodHandles.lookup(), SpelunkersTorchForge.class);
-        modBusGroup.register(MethodHandles.lookup(), SpelunkersTorchForge.class);
+        BuildCreativeModeTabContentsEvent.BUS.addListener(SpelunkersTorchForge::onCreativeTabsBuild);
+        RegisterCommandsEvent.BUS.addListener(SpelunkersTorchForge::registerCommands);
+        TickEvent.ServerTickEvent.Post.BUS.addListener(SpelunkersTorchForge::serverTick);
 
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            MinecraftForge.EVENT_BUS.register(MethodHandles.lookup(), SpelunkersTorchClientForge.class);
-            modBusGroup.register(MethodHandles.lookup(), SpelunkersTorchClientForge.class);
+            EntityRenderersEvent.RegisterRenderers.BUS.addListener(SpelunkersTorchClientForge::onRegisterRenderers);
+            CreateSpecialBlockRendererEvent.BUS.addListener(SpelunkersTorchClientForge::createSpecialBlockRendererEvent);
         }
 
         Constants.LOG.info("Spelunker's Torch common init done");
     }
 
-    @SubscribeEvent
     public static void onCreativeTabsBuild(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
             event.accept(TORCH_ITEM.get());
         }
     }
 
-    @SubscribeEvent
     public static void registerCommands(RegisterCommandsEvent event) {
         CommandRecalculate.register(event.getDispatcher());
     }
 
-    @SubscribeEvent
-    public static void serverTick(TickEvent.ServerTickEvent event) {
+    public static void serverTick(TickEvent.ServerTickEvent.Post event) {
         SpelunkersTorch.serverTick();
     }
 }
