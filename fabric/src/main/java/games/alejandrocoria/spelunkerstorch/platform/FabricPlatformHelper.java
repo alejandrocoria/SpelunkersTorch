@@ -1,13 +1,13 @@
 package games.alejandrocoria.spelunkerstorch.platform;
 
+import com.mojang.logging.annotations.MethodsReturnNonnullByDefault;
 import games.alejandrocoria.spelunkerstorch.Constants;
 import games.alejandrocoria.spelunkerstorch.platform.services.IPlatformHelper;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.StandingAndWallBlockItem;
 import net.minecraft.world.level.block.Block;
@@ -32,13 +32,13 @@ public class FabricPlatformHelper implements IPlatformHelper {
 
     @Override
     public Supplier<Block> registerBlock(String key, Supplier<Block> block) {
-        Block b = Registry.register(BuiltInRegistries.BLOCK, ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, key), block.get());
+        Block b = Registry.register(BuiltInRegistries.BLOCK, Identifier.fromNamespaceAndPath(Constants.MOD_ID, key), block.get());
         return () -> b;
     }
 
     @Override
     public Supplier<Item> registerItem(String key, Supplier<Item> item) {
-        Item i = Registry.register(BuiltInRegistries.ITEM, ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, key), item.get());
+        Item i = Registry.register(BuiltInRegistries.ITEM, Identifier.fromNamespaceAndPath(Constants.MOD_ID, key), item.get());
         return () -> i;
     }
 
@@ -49,7 +49,7 @@ public class FabricPlatformHelper implements IPlatformHelper {
 
     @Override
     public <T extends BlockEntity> Supplier<BlockEntityType<T>> registerBlockEntity(String key, Supplier<BlockEntityType<T>> type) {
-        BlockEntityType<T> t = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, key), type.get());
+        BlockEntityType<T> t = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, Identifier.fromNamespaceAndPath(Constants.MOD_ID, key), type.get());
         return () -> t;
     }
 }

@@ -1,5 +1,6 @@
 package games.alejandrocoria.spelunkerstorch;
 
+import com.mojang.logging.annotations.MethodsReturnNonnullByDefault;
 import games.alejandrocoria.spelunkerstorch.common.block.entity.TorchEntity;
 import games.alejandrocoria.spelunkerstorch.common.mixin.server.ChunkMapAccessor;
 import games.alejandrocoria.spelunkerstorch.common.pathfinding.PathFindingCache;
@@ -10,7 +11,6 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
-import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Cursor3D;
 import net.minecraft.core.SectionPos;

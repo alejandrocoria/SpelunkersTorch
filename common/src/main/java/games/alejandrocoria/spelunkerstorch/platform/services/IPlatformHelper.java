@@ -1,6 +1,6 @@
 package games.alejandrocoria.spelunkerstorch.platform.services;
 
-import net.minecraft.MethodsReturnNonnullByDefault;
+import com.mojang.logging.annotations.MethodsReturnNonnullByDefault;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;

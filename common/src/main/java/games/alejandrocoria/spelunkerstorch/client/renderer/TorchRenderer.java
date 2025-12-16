@@ -1,10 +1,10 @@
 package games.alejandrocoria.spelunkerstorch.client.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.logging.annotations.MethodsReturnNonnullByDefault;
 import games.alejandrocoria.spelunkerstorch.common.block.WallTorch;
 import games.alejandrocoria.spelunkerstorch.common.block.entity.TorchEntity;
 import games.alejandrocoria.spelunkerstorch.common.util.Util;
-import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;

@@ -3,14 +3,14 @@ package games.alejandrocoria.spelunkerstorch.client.renderer;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import games.alejandrocoria.spelunkerstorch.Constants;
-import net.minecraft.client.renderer.RenderStateShard;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.resources.ResourceLocation;
+import games.alejandrocoria.spelunkerstorch.common.mixin.client.RenderTypeInvoker;
+import net.minecraft.client.renderer.rendertype.RenderSetup;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.resources.Identifier;
 
-public class NeedleRenderType extends RenderType {
+public class NeedleRenderType {
     private static final RenderPipeline NEEDLE_RENDER_TYPE_PIPELINE = RenderPipeline.builder()
             .withLocation(Constants.MOD_ID + "/pipeline/needle")
             .withVertexShader("core/entity")
@@ -25,45 +25,16 @@ public class NeedleRenderType extends RenderType {
             .withVertexFormat(DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.TRIANGLES)
             .build();
 
-    public NeedleRenderType(String name, int bufferSize, boolean useDelegate, boolean needsSorting, Runnable pre, Runnable post) {
-        super(name, bufferSize, useDelegate, needsSorting, pre, post);
-    }
-
-    private static final RenderType NEEDLE_RENDER_TYPE = create(
+    private static final RenderType NEEDLE_RENDER_TYPE = RenderTypeInvoker.invokeCreate(
             Constants.MOD_ID + "_needle",
-            256,
-            false,
-            false,
-            NEEDLE_RENDER_TYPE_PIPELINE,
-            RenderType.CompositeState.builder()
-                    .setTextureState(new RenderStateShard.TextureStateShard(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "textures/needle.png"), false))
-                    .setLayeringState(NO_LAYERING)
-                    .setLightmapState(LIGHTMAP)
-                    .setOverlayState(OVERLAY)
-                    .createCompositeState(true)
+            RenderSetup.builder(NEEDLE_RENDER_TYPE_PIPELINE)
+                    .withTexture("Sampler0", Identifier.fromNamespaceAndPath(Constants.MOD_ID, "textures/needle.png"))
+                    .useLightmap()
+                    .useOverlay()
+                    .createRenderSetup()
     );
 
     public static RenderType getRenderType() {
         return NEEDLE_RENDER_TYPE;
-    }
-
-    @Override
-    public void draw(MeshData meshData) {
-
-    }
-
-    @Override
-    public VertexFormat format() {
-        return null;
-    }
-
-    @Override
-    public VertexFormat.Mode mode() {
-        return null;
-    }
-
-    @Override
-    public RenderPipeline pipeline() {
-        return NEEDLE_RENDER_TYPE_PIPELINE;
     }
 }

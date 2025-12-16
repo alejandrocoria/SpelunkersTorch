@@ -1,8 +1,8 @@
 package games.alejandrocoria.spelunkerstorch.platform;
 
+import com.mojang.logging.annotations.MethodsReturnNonnullByDefault;
 import games.alejandrocoria.spelunkerstorch.SpelunkersTorchNeoForge;
 import games.alejandrocoria.spelunkerstorch.platform.services.IPlatformHelper;
-import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.StandingAndWallBlockItem;

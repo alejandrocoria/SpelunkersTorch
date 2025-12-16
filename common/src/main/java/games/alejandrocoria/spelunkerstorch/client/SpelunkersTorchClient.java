@@ -1,11 +1,11 @@
 package games.alejandrocoria.spelunkerstorch.client;
 
+import com.mojang.logging.annotations.FieldsAreNonnullByDefault;
+import com.mojang.logging.annotations.MethodsReturnNonnullByDefault;
 import games.alejandrocoria.spelunkerstorch.Constants;
 import games.alejandrocoria.spelunkerstorch.SpelunkersTorch;
 import games.alejandrocoria.spelunkerstorch.client.renderer.TorchRenderer;
 import games.alejandrocoria.spelunkerstorch.common.block.entity.TorchEntity;
-import net.minecraft.FieldsAreNonnullByDefault;
-import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.core.SectionPos;

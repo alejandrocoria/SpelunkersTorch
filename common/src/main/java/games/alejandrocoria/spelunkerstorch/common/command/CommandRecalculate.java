@@ -10,12 +10,14 @@ import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
 import net.minecraft.world.level.ChunkPos;
 
 public class CommandRecalculate {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("spelunkerstorch").requires(
-                (commandSource) -> commandSource.hasPermission(2))
+                (commandSource) -> commandSource.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.GAMEMASTERS)))
                 .then(Commands.literal("loaded").executes(CommandRecalculate::recalculateLoaded))
                 .then(Commands.literal("chunk").executes(CommandRecalculate::recalculateChunk))
                 .then(Commands.literal("section").executes(CommandRecalculate::recalculateSection))

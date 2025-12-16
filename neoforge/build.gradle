@@ -15,8 +15,8 @@ neoForge {
         accessTransformers.from(at.absolutePath)
     }
     parchment {
-        minecraftVersion = parchment_minecraft
-        mappingsVersion = parchment_version
+        minecraftVersion = mappings_mc_version
+        mappingsVersion = mappings_date
     }
     runs {
         configureEach {
@@ -49,7 +49,7 @@ jar {
     dependsOn "processDocs"
 }
 
-task processDocs(type: Copy) {
+tasks.register('processDocs', Copy) {
     // update docs
     from(file("../doc/")) {
         include '*.md'

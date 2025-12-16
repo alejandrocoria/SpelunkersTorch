@@ -1,5 +1,7 @@
 package games.alejandrocoria.spelunkerstorch.common.block.entity;
 
+import com.mojang.logging.annotations.FieldsAreNonnullByDefault;
+import com.mojang.logging.annotations.MethodsReturnNonnullByDefault;
 import games.alejandrocoria.spelunkerstorch.Constants;
 import games.alejandrocoria.spelunkerstorch.SpelunkersTorch;
 import games.alejandrocoria.spelunkerstorch.client.SpelunkersTorchClient;
@@ -7,8 +9,6 @@ import games.alejandrocoria.spelunkerstorch.common.block.Torch;
 import games.alejandrocoria.spelunkerstorch.common.pathfinding.Path;
 import games.alejandrocoria.spelunkerstorch.common.pathfinding.PathFinder;
 import games.alejandrocoria.spelunkerstorch.common.util.Util;
-import net.minecraft.FieldsAreNonnullByDefault;
-import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.SectionPos;

@@ -3,7 +3,7 @@ package games.alejandrocoria.spelunkerstorch.client;
 import games.alejandrocoria.spelunkerstorch.Constants;
 import games.alejandrocoria.spelunkerstorch.client.renderer.TorchSpecialRenderer;
 import net.minecraft.client.renderer.special.SpecialModelRenderers;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraftforge.client.event.CreateSpecialBlockRendererEvent;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 
@@ -15,7 +15,7 @@ public class SpelunkersTorchClientForge {
     }
 
     public static void createSpecialBlockRendererEvent(CreateSpecialBlockRendererEvent event) {
-        SpecialModelRenderers.ID_MAPPER.put(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "torch"), TorchSpecialRenderer.Unbaked.MAP_CODEC);
+        SpecialModelRenderers.ID_MAPPER.put(Identifier.fromNamespaceAndPath(Constants.MOD_ID, "torch"), TorchSpecialRenderer.Unbaked.MAP_CODEC);
         event.register(TORCH_BLOCK.get(), new TorchSpecialRenderer.Unbaked());
     }
 }

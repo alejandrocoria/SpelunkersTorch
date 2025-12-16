@@ -1,12 +1,12 @@
 package games.alejandrocoria.spelunkerstorch.client.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.logging.annotations.MethodsReturnNonnullByDefault;
 import com.mojang.serialization.MapCodec;
 import games.alejandrocoria.spelunkerstorch.Registry;
 import games.alejandrocoria.spelunkerstorch.client.SpelunkersTorchClient;
 import games.alejandrocoria.spelunkerstorch.common.block.entity.TorchEntity;
 import games.alejandrocoria.spelunkerstorch.common.util.Util;
-import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.Sheets;
@@ -21,12 +21,12 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.phys.Vec3;
 import org.joml.AxisAngle4f;
 import org.joml.Quaternionf;
-import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
-import java.util.Set;
+import java.util.function.Consumer;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
@@ -58,7 +58,7 @@ public class TorchSpecialRenderer implements NoDataSpecialModelRenderer {
         if (displayContext.firstPerson()) {
             poseStack.popPose();
 
-            Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+            Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().position();
             List<TorchEntity> nearbyTorches = SpelunkersTorchClient.getTorchesInNearbySections(Minecraft.getInstance().level, SectionPos.of(BlockPos.containing(cameraPos)));
             if (!nearbyTorches.isEmpty()) {
                 Quaternionf needleRotation = calculateNeedleRotation(Minecraft.getInstance().player, cameraPos, nearbyTorches);
@@ -155,7 +155,8 @@ public class TorchSpecialRenderer implements NoDataSpecialModelRenderer {
     }
 
     @Override
-    public void getExtents(Set<Vector3f> set) {
+    public void getExtents(Consumer<Vector3fc> consumer) {
+
     }
 
 
